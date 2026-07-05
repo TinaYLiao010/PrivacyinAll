@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoC Cross-Jurisdiction Privacy Law Compare Demo | Bilingual</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial, sans-serif;}
+body{background:#f4f7fb;padding-top:160px;max-width:1400px;margin:0 auto;}
+h1{text-align:center;color:#182a46;margin-bottom:8px;font-size:20px;}
+.desc{text-align:center;color:#555;margin-bottom:12px;font-size:14px;}
+
+/* 筛选控制栏固定置顶常驻 */
+.control-bar{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background:#ffffff;
+    padding:16px 22px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    z-index: 9999;
+    display:flex;
+    gap:16px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+#dimSelect{padding:9px;min-width:220px;border:1px solid #ccd6e0;border-radius:6px;}
+#keywordInput{padding:9px;min-width:260px;border:1px solid #ccd6e0;border-radius:6px;}
+#refreshBtn{background:#2563eb;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;}
+#exportBtn{background:#039674;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;}
+.jur-check-group{display:flex;gap:14px;}
+
+.compare-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:24px;}
+.jur-card{background:#fff;border-radius:10px;padding:18px;border:1px solid #e2e8f0;min-height:68vh;overflow-y:auto;}
+.card-title{font-size:16px;font-weight:bold;padding-bottom:10px;border-bottom:1px solid #eee;margin-bottom:14px;color:#193677;}
+.clause-item{padding:14px 0;border-bottom:1px solid #f0f4fa;}
+.clause-id{font-size:12px;color:#777;margin-bottom:8px;}
+/* 双语样式区分 */
+.original-text{white-space:pre-line;line-height:1.6;font-size:14px;color:#111;}
+.en-translate{white-space:pre-line;line-height:1.6;font-size:14px;color:#2358b9;margin-top:10px;border-top:1px dashed #d2dcf0;padding-top:10px;}
+.highlight{background:#fff399;padding:0 2px;}
+.empty-tip{text-align:center;padding:80px;color:#777;grid-column:1 / -1;font-size:15px;}
+.page-bar{margin:26px auto;text-align:center;display:none;}
+.page-btn{margin:0 6px;padding:6px 12px;border:1px solid #ccd6e0;background:#fff;border-radius:4px;cursor:pointer;}
+.page-btn.active{background:#2563eb;color:#fff;border:#2563eb;}
+</style>
+</head>
+<body>
+<!-- 固定置顶筛选区域 -->
+<div class="control-bar">
+    <div style="width:100%;">
+        <h1 style="margin:0;">PoC Multi-Jurisdiction Privacy Clause Side-by-Side Compare</h1>
+        <div class="desc">Local Bilingual Dataset | Original Text + Official English Interpretation</div>
+    </div>
+    <label>Filter by Dimension:</label>
+    <select id="dimSelect">
+        <option value="">All Dimensions</option>
+    </select>
+    <label>Keyword:</label>
+    <input id="keywordInput" placeholder="Leave empty to show all clauses">
+    <div class="jur-check-group">
+        <label><input type="checkbox" value="CN_PIPL" checked> CN-PIPL</label>
+        <label><input type="checkbox" value="JP_APPI" checked> JP-APPI</label>
+        <label><input type="checkbox" value="KR_PIPA" checked> KR-PIPA</label>
+    </div>
+    <button id="refreshBtn">Refresh Compare Table</button>
+    <button id="exportBtn">Export All Bilingual Text</button>
+</div>
+
+<div class="compare-wrap" id="compareBox"></div>
+<div class="page-bar" id="pageBar"></div>
+
+<script>
+const PAGE_SIZE = 8;
+let allFiltered = [];
+let currentPage = 1;
+const rawJsonText = '[{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 38\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"个人信息处理者向境外提供个人信息的，应当取得个人单独同意，并按照国家网信部门规定完成安全评估。\",\"content_en\":\"Where a personal information handler provides personal information to overseas parties, it shall obtain separate individual consent from data subjects and complete security assessment in accordance with rules issued by national cyberspace authority.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 24\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"事業者が外国に個人データを提供する場合、本人の明示的な同意を取得し、移転先の国の保護水準を確認しなければならない。\",\"content_en\":\"When a business operator transfers personal data to foreign jurisdictions, it must obtain explicit consent from the data subject and verify the personal data protection standard of the receiving country.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 42\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"개인정보처리자는 해외로 개인정보를 이전하려면 정보주체의 별도 동의를 받고 이전 국가의 보호수준을 검증해야 한다.\",\"content_en\":\"Personal information processors shall obtain separate consent from data subjects before transferring personal data overseas and verify the data protection level of the destination country.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 31\",\"dimension\":\"MinorProtection\",\"content_original\":\"处理不满十四周岁未成年人个人信息，应当征得监护人同意。\",\"content_en\":\"Processing personal information of minors under the age of 14 shall obtain consent from their legal guardians.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 18\",\"dimension\":\"MinorProtection\",\"content_original\":\"15歳未満の未成年者の個人データを取り扱う際は保護者の同意を要する。\",\"content_en\":\"Consent from guardians is required when handling personal data of minors under 15 years old.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 22\",\"dimension\":\"MinorProtection\",\"content_original\":\"14세 미만 아동의 개인정보 처리 시 법적 보호자의 동의를 필수로 취득해야 한다.\",\"content_en\":\"It is mandatory to obtain consent from legal guardians when processing personal information of children under 14.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 47\",\"dimension\":\"DataSubjectRight\",\"content_original\":\"个人有权要求处理者删除、清除其个人信息。\",\"content_en\":\"Data subjects have the right to request handlers to delete and erase their personal information.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 66\",\"dimension\":\"Penalty\",\"content_original\":\"违法处理个人信息的，可处五千万元以下罚款；情节严重吊销相关业务许可。\",\"content_en\":\"Violations of personal information processing rules may incur fines up to 50 million RMB; severe violations will result in revocation of relevant business permits.\"}]';
+const fullData = JSON.parse(rawJsonText);
+
+const dimSelect = document.getElementById("dimSelect");
+const keywordInput = document.getElementById("keywordInput");
+const refreshBtn = document.getElementById("refreshBtn");
+const exportBtn = document.getElementById("exportBtn");
+const compareBox = document.getElementById("compareBox");
+const pageBar = document.getElementById("pageBar");
+const checkboxes = document.querySelectorAll(".jur-check-group input[type=checkbox]");
+
+// 填充维度下拉
+const dimOptionsList = [
+    "BasicDefinition",
+    "DataSubjectRight",
+    "DataControllerObligation",
+    "AutomatedDecision",
+    "MinorProtection",
+    "CrossBorderTransfer",
+    "Penalty",
+    "ComplianceAssessment"
+];
+dimOptionsList.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dimSelect.appendChild(opt);
+})
+
+refreshBtn.addEventListener("click", runFilter);
+exportBtn.addEventListener("click", exportCompareText);
+
+// 过滤逻辑
+function runFilter(){
+    console.log("Total raw bilingual clauses: ", fullData.length);
+    const targetDim = dimSelect.value;
+    const kw = keywordInput.value.trim().toLowerCase();
+    const selectedJur = [];
+    checkboxes.forEach(cb=>{if(cb.checked) selectedJur.push(cb.value);})
+
+    let tempData = [...fullData];
+    if(targetDim) tempData = tempData.filter(i=>i.dimension === targetDim);
+    tempData = tempData.filter(i=>selectedJur.includes(i.law_code));
+    if(kw !== ""){
+        tempData = tempData.filter(i=>{
+            const ori = i.content_original.toLowerCase();
+            const en = i.content_en.toLowerCase();
+            return ori.includes(kw) || en.includes(kw);
+        });
+    }
+    allFiltered = tempData;
+    currentPage = 1;
+    renderCompare();
+}
+
+// 三栏并排渲染，每条展示原文+英文释义
+function renderCompare(){
+    compareBox.innerHTML = "";
+    pageBar.style.display = "none";
+    const total = allFiltered.length;
+    if(total === 0){
+        compareBox.innerHTML = `<div class="empty-tip">No matching bilingual clauses, restore all filters to default.</div>`;
+        return;
+    }
+    const groupCN = allFiltered.filter(i=>i.law_code === "CN_PIPL");
+    const groupJP = allFiltered.filter(i=>i.law_code === "JP_APPI");
+    const groupKR = allFiltered.filter(i=>i.law_code === "KR_PIPA");
+    const kw = keywordInput.value.trim();
+
+    function buildCard(title, arr){
+        let html = `<div class="jur-card"><div class="card-title">${title}</div>`;
+        arr.forEach(item=>{
+            let oriText = item.content_original;
+            let enText = item.content_en;
+            if(kw){
+                const reg = new RegExp(`(${kw})`, "gi");
+                oriText = oriText.replace(reg, `<span class="highlight">$1</span>`);
+                enText = enText.replace(reg, `<span class="highlight">$1</span>`);
+            }
+            html += `
+                <div class="clause-item">
+                    <div class="clause-id">${item.clause_no} | ${item.dimension}</div>
+                    <div class="original-text">Original: ${oriText}</div>
+                    <div class="en-translate">Official English Interpretation: ${enText}</div>
+                </div>
+            `;
+        })
+        html += "</div>";
+        return html;
+    }
+    compareBox.innerHTML = buildCard("CN-PIPL (China)", groupCN)
+        + buildCard("JP-APPI (Japan)", groupJP)
+        + buildCard("KR-PIPA (Korea)", groupKR);
+}
+
+// 导出全部双语文本
+function exportCompareText(){
+    let out = "==== Multi-Jurisdiction Bilingual Compare Export ====\n\n";
+    fullData.forEach(item=>{
+        out += `[${item.law_code}] ${item.clause_no} [${item.dimension}]\nOriginal: ${item.content_original}\nEnglish: ${item.content_en}\n\n`;
+    })
+    navigator.clipboard.writeText(out).then(()=>alert("All bilingual clauses copied to clipboard!"));
+}
+
+// 页面加载自动刷新展示全部法条
+window.onload = function(){
+    runFilter();
+}
+</script>
+</body>
+</html>

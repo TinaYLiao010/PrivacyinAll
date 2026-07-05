@@ -1,0 +1,3 @@
+[2026-07-05 16:01:25] PoC directory structure created successfully
+[2026-07-05 16:01:25] Global config files generated
+[2026-07-05 16:01:26] Python dependencies installation finished
