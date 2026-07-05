@@ -1,0 +1,58 @@
+[
+  {
+    "law_code": "CN_PIPL",
+    "clause_no": "Article 38",
+    "dimension": "CrossBorderTransfer",
+    "content_original": "个人信息处理者向境外提供个人信息的，应当取得个人单独同意，并按照国家网信部门规定完成安全评估。",
+    "content_en": "Where a personal information handler provides personal information to overseas parties, it shall obtain separate individual consent from data subjects and complete security assessment in accordance with rules issued by national cyberspace authority."
+  },
+  {
+    "law_code": "JP_APPI",
+    "clause_no": "Article 24",
+    "dimension": "CrossBorderTransfer",
+    "content_original": "事業者が外国に個人データを提供する場合、本人の明示的な同意を取得し、移転先の国の保護水準を確認しなければならない。",
+    "content_en": "When a business operator transfers personal data to foreign jurisdictions, it must obtain explicit consent from the data subject and verify the personal data protection standard of the receiving country."
+  },
+  {
+    "law_code": "KR_PIPA",
+    "clause_no": "Article 42",
+    "dimension": "CrossBorderTransfer",
+    "content_original": "개인정보처리자는 해외로 개인정보를 이전하려면 정보주체의 별도 동의를 받고 이전 국가의 보호수준을 검증해야 한다.",
+    "content_en": "Personal information processors shall obtain separate consent from data subjects before transferring personal data overseas and verify the data protection level of the destination country."
+  },
+  {
+    "law_code": "CN_PIPL",
+    "clause_no": "Article 31",
+    "dimension": "MinorProtection",
+    "content_original": "处理不满十四周岁未成年人个人信息，应当征得监护人同意。",
+    "content_en": "Processing personal information of minors under the age of 14 shall obtain consent from their legal guardians."
+  },
+  {
+    "law_code": "JP_APPI",
+    "clause_no": "Article 18",
+    "dimension": "MinorProtection",
+    "content_original": "15歳未満の未成年者の個人データを取り扱う際は保護者の同意を要する。",
+    "content_en": "Consent from guardians is required when handling personal data of minors under 15 years old."
+  },
+  {
+    "law_code": "KR_PIPA",
+    "clause_no": "Article 22",
+    "dimension": "MinorProtection",
+    "content_original": "14세 미만 아동의 개인정보 처리 시 법적 보호자의 동의를 필수로 취득해야 한다.",
+    "content_en": "It is mandatory to obtain consent from legal guardians when processing personal information of children under 14."
+  },
+  {
+    "law_code": "CN_PIPL",
+    "clause_no": "Article 47",
+    "dimension": "DataSubjectRight",
+    "content_original": "个人有权要求处理者删除、清除其个人信息。",
+    "content_en": "Data subjects have the right to request handlers to delete and erase their personal information."
+  },
+  {
+    "law_code": "CN_PIPL",
+    "clause_no": "Article 66",
+    "dimension": "Penalty",
+    "content_original": "违法处理个人信息的，可处五千万元以下罚款；情节严重吊销相关业务许可。",
+    "content_en": "Violations of personal information processing rules may incur fines up to 50 million RMB; severe violations will result in revocation of relevant business permits."
+  }
+]
