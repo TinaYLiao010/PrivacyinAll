@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoC AI Compliance Chat Demo | Claude Code Coding Plan | Bilingual Law</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial, sans-serif;}
+body{background:#f2f5fa;padding:20px;max-width:1200px;margin:0 auto;}
+h1{text-align:center;color:#182a44;margin-bottom:10px;}
+.desc{text-align:center;color:#555;margin-bottom:24px;font-size:14px;}
+.control-bar{background:#fff;padding:18px;border-radius:8px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+#presetSelect{padding:8px;width:400px;border:1px solid #ccd6e0;border-radius:6px;}
+#clearBtn{background:#e53e3e;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;}
+.chat-container{background:#fff;border-radius:10px;padding:20px;height:60vh;overflow-y:auto;margin-bottom:16px;border:1px solid #e2e8f0;}
+.msg-user{background:#2563eb;color:#fff;padding:10px 14px;border-radius:12px 12px 2px 12px;max-width:70%;margin:10px 0 10px auto;word-wrap:break-word;white-space:pre-line;line-height:1.6;}
+.msg-ai{background:#e8edf5;color:#111;padding:10px 14px;border-radius:12px 12px 12px 2px;max-width:70%;margin:10px auto 10px 0;word-wrap:break-word;white-space:pre-line;line-height:1.6;}
+.input-area{display:flex;gap:10px;}
+#userInput{flex:1;padding:10px;border:1px solid #ccd6e0;border-radius:6px;min-height:60px;resize:none;}
+#sendBtn{background:#2563eb;color:#fff;border:none;padding:0 20px;border-radius:6px;cursor:pointer;}
+.tip-small{font-size:12px;color:#777;margin-top:8px;}
+/* 双语上下文样式区分 */
+.ref-original{margin-top:6px;color:#111;}
+.ref-en{margin-top:6px;color:#2563eb;border-top:1px dashed #ccc;padding-top:6px;}
+</style>
+</head>
+<body>
+<h1>PoC AI Privacy Compliance Q&A Demo</h1>
+<div class="desc">Local Bilingual Law Context | Via Local Python Proxy Port 9000 | VolcEngine Claude Code Coding Plan</div>
+
+<div class="control-bar">
+    <label>Preset Compliance Questions:</label>
+    <select id="presetSelect">
+        <option value="">-- Select Demo Question --</option>
+    </select>
+    <button id="clearBtn">Clear Chat History</button>
+</div>
+
+<div class="chat-container" id="chatBox"></div>
+<div class="input-area">
+    <textarea id="userInput" placeholder="Input your privacy compliance question..."></textarea>
+    <button id="sendBtn">Send</button>
+</div>
+<div class="tip-small">Note: Run ark_proxy.py on port 9000 first to avoid browser CORS restriction</div>
+
+<script>
+// 注入本地双语法条数据集
+const fullLawData = JSON.parse('[{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 38\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"个人信息处理者向境外提供个人信息的，应当取得个人单独同意，并按照国家网信部门规定完成安全评估。\",\"content_en\":\"Where a personal information handler provides personal information to overseas parties, it shall obtain separate individual consent from data subjects and complete security assessment in accordance with rules issued by national cyberspace authority.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 24\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"事業者が外国に個人データを提供する場合、本人の明示的な同意を取得し、移転先の国の保護水準を確認しなければならない。\",\"content_en\":\"When a business operator transfers personal data to foreign jurisdictions, it must obtain explicit consent from the data subject and verify the personal data protection standard of the receiving country.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 42\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"개인정보처리자는 해외로 개인정보를 이전하려면 정보주체의 별도 동의를 받고 이전 국가의 보호수준을 검증해야 한다.\",\"content_en\":\"Personal information processors shall obtain separate consent from data subjects before transferring personal data overseas and verify the data protection level of the destination country.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 31\",\"dimension\":\"MinorProtection\",\"content_original\":\"处理不满十四周岁未成年人个人信息，应当征得监护人同意。\",\"content_en\":\"Processing personal information of minors under the age of 14 shall obtain consent from their legal guardians.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 18\",\"dimension\":\"MinorProtection\",\"content_original\":\"15歳未満の未成年者の個人データを取り扱う際は保護者の同意を要する。\",\"content_en\":\"Consent from guardians is required when handling personal data of minors under 15 years old.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 22\",\"dimension\":\"MinorProtection\",\"content_original\":\"14세 미만 아동의 개인정보 처리 시 법적 보호자의 동의를 필수로 취득해야 한다.\",\"content_en\":\"It is mandatory to obtain consent from legal guardians when processing personal information of children under 14.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 47\",\"dimension\":\"DataSubjectRight\",\"content_original\":\"个人有权要求处理者删除、清除其个人信息。\",\"content_en\":\"Data subjects have the right to request handlers to delete and erase their personal information.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 66\",\"dimension\":\"Penalty\",\"content_original\":\"违法处理个人信息的，可处五千万元以下罚款；情节严重吊销相关业务许可。\",\"content_en\":\"Violations of personal information processing rules may incur fines up to 50 million RMB; severe violations will result in revocation of relevant business permits.\"}]');
+const presetQuestions = JSON.parse('[\"What are the cross-border transfer requirements under CN-PIPL?\",\"How to protect minors\' personal information in three jurisdictions?\",\"Explain data subject\'s right to deletion\",\"What penalties will be imposed for violating privacy laws?\",\"Rules for automated decision-making processing\"]');
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const presetSelect = document.getElementById("presetSelect");
+const clearBtn = document.getElementById("clearBtn");
+
+// 填充预置问题下拉
+presetQuestions.forEach(q=>{
+    const opt = document.createElement("option");
+    opt.value = q;
+    opt.textContent = q;
+    presetSelect.appendChild(opt);
+})
+
+presetSelect.addEventListener("change", function(){
+    if(this.value) userInput.value = this.value;
+})
+
+// 清空对话
+clearBtn.addEventListener("click", ()=>{
+    chatBox.innerHTML = "";
+})
+
+// 渲染消息气泡
+function addMessage(text, isUser){
+    const div = document.createElement("div");
+    div.className = isUser ? "msg-user" : "msg-ai";
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// 【更新：双语上下文拼接，同时输出原文+英文释义】
+function getLawContext(question){
+    let ctx = "=== Reference Multi-Jurisdiction Bilingual Privacy Clauses (CN-PIPL / JP-APPI / KR-PIPA) ===\n\n";
+    const kwMap = {
+        "cross-border":"CrossBorderTransfer",
+        "minor":"MinorProtection",
+        "deletion":"DataSubjectRight",
+        "penalty":"Penalty",
+        "automated":"AutomatedDecision"
+    };
+    let targetDim = null;
+    const qLow = question.toLowerCase();
+    for(let kw in kwMap){
+        if(qLow.includes(kw)) targetDim = kwMap[kw];
+    }
+    const matchClauses = targetDim ? fullLawData.filter(item=>item.dimension === targetDim).slice(0,8) : fullLawData.slice(0,6);
+    matchClauses.forEach(item=>{
+        ctx += `[${item.law_code}] ${item.clause_no} | Dimension: ${item.dimension}\n`;
+        ctx += `Original Text: ${item.content_original}\n`;
+        ctx += `Official English Interpretation: ${item.content_en}\n\n`;
+    })
+    return ctx;
+}
+
+// 对接本地9000代理，前端不再携带Authorization鉴权头，适配火山Coding Plan
+async function callArkCodingAPI(userQ){
+    const ENDPOINT = "http://127.0.0.1:9000";
+    const MODEL_ID = "ark-code-latest";
+    const context = getLawContext(userQ);
+    const sysPrompt = "You are a professional cross-jurisdiction privacy compliance consultant. Answer only based on the attached bilingual law context, compare CN-PIPL, JP-APPI and KR-PIPA, reply in clear English. If no matching clause exists, clearly state no relevant regulation found. Reference Context: " + context;
+    
+    const payload = {
+        model: MODEL_ID,
+        temperature: 0.3,
+        max_tokens: 4096,
+        messages: [
+            {"role": "system", "content": sysPrompt},
+            {"role": "user", "content": userQ}
+        ]
+    };
+
+    try{
+        const res = await fetch(ENDPOINT, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.error){
+            return "API Fail: " + data.error.message + "\nCheck Coding Plan API Key inside ark_proxy.py";
+        }
+        return data.choices[0].message.content;
+    }catch(err){
+        return "Network Error: Please start ark_proxy.py local proxy on port 9000 first.";
+    }
+}
+
+// 发送按钮点击事件
+sendBtn.addEventListener("click", async()=>{
+    console.log("Send button triggered");
+    const q = userInput.value.trim();
+    if(!q){
+        alert("Please input compliance question first!");
+        return;
+    }
+    addMessage(q, true);
+    userInput.value = "";
+    addMessage("Loading bilingual law context & requesting Claude Code via local proxy...", false);
+    const ans = await callArkCodingAPI(q);
+    chatBox.removeChild(chatBox.lastChild);
+    addMessage(ans, false);
+})
+
+// 回车快捷发送
+userInput.addEventListener("keydown", e=>{
+    if(e.key === "Enter" && !e.shiftKey){
+        e.preventDefault();
+        sendBtn.click();
+    }
+})
+</script>
+</body>
+</html>

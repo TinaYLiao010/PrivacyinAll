@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoC Offline Law Search Demo | Bilingual Original + English</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial, sans-serif;}
+body{background:#f4f7fc;padding:20px;max-width:1200px;margin:0 auto;}
+h1{text-align:center;color:#172b47;margin-bottom:10px;}
+.desc{text-align:center;color:#666;margin-bottom:24px;font-size:14px;}
+.search-bar{background:#fff;padding:18px;border-radius:8px;margin-bottom:20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 6px #e1e6f0;}
+#dimFilter{padding:9px;min-width:220px;border:1px solid #ccd6e0;border-radius:6px;}
+#jurFilter{padding:9px;min-width:180px;border:1px solid #ccd6e0;border-radius:6px;}
+#keywordInput{padding:9px;flex:1;min-width:280px;border:1px solid #ccd6e0;border-radius:6px;}
+#searchBtn{background:#2563eb;color:#fff;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;}
+#resetBtn{background:#6b7280;color:#fff;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;}
+.result-box{background:#fff;border-radius:10px;padding:20px;min-height:60vh;overflow-y:auto;}
+.clause-card{border-bottom:1px solid #e9edf7;padding:16px 0;}
+.card-header{font-size:13px;color:#555;margin-bottom:8px;}
+.original-text{line-height:1.6;margin-bottom:10px;white-space:pre-line;}
+.en-trans-text{line-height:1.6;color:#2563eb;border-top:1px dashed #d0d9ec;padding-top:10px;white-space:pre-line;}
+.highlight{background:#fff299;padding:0 2px;}
+.empty-tip{text-align:center;padding:80px;color:#777;font-size:15px;}
+.page-control{margin-top:20px;text-align:center;display:none;}
+.page-btn{margin:0 6px;padding:6px 12px;border:1px solid #ccd6e0;background:#fff;border-radius:4px;cursor:pointer;}
+.page-btn.active{background:#2563eb;color:#fff;border:#2563eb;}
+</style>
+</head>
+<body>
+<h1>PoC Multi-Jurisdiction Privacy Law Search</h1>
+<div class="desc">Local Bilingual Dataset | Original Text + Official English Interpretation</div>
+
+<div class="search-bar">
+    <label>Filter Dimension:</label>
+    <select id="dimFilter">
+        <option value="">All Dimensions</option>
+    </select>
+    <label>Jurisdiction:</label>
+    <select id="jurFilter">
+        <option value="">All Jurisdictions</option>
+        <option value="CN_PIPL">CN-PIPL</option>
+        <option value="JP_APPI">JP-APPI</option>
+        <option value="KR_PIPA">KR-PIPA</option>
+    </select>
+    <input id="keywordInput" placeholder="Input keyword to highlight (bilingual match)">
+    <button id="searchBtn">Search</button>
+    <button id="resetBtn">Reset All Filters</button>
+</div>
+
+<div class="result-box" id="resultBox"></div>
+<div class="page-control" id="pageBar"></div>
+
+<script>
+const PAGE_SIZE = 10;
+let fullLawData = JSON.parse('[{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 38\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"个人信息处理者向境外提供个人信息的，应当取得个人单独同意，并按照国家网信部门规定完成安全评估。\",\"content_en\":\"Where a personal information handler provides personal information to overseas parties, it shall obtain separate individual consent from data subjects and complete security assessment in accordance with rules issued by national cyberspace authority.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 24\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"事業者が外国に個人データを提供する場合、本人の明示的な同意を取得し、移転先の国の保護水準を確認しなければならない。\",\"content_en\":\"When a business operator transfers personal data to foreign jurisdictions, it must obtain explicit consent from the data subject and verify the personal data protection standard of the receiving country.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 42\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"개인정보처리자는 해외로 개인정보를 이전하려면 정보주체의 별도 동의를 받고 이전 국가의 보호수준을 검증해야 한다.\",\"content_en\":\"Personal information processors shall obtain separate consent from data subjects before transferring personal data overseas and verify the data protection level of the destination country.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 31\",\"dimension\":\"MinorProtection\",\"content_original\":\"处理不满十四周岁未成年人个人信息，应当征得监护人同意。\",\"content_en\":\"Processing personal information of minors under the age of 14 shall obtain consent from their legal guardians.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 18\",\"dimension\":\"MinorProtection\",\"content_original\":\"15歳未満の未成年者の個人データを取り扱う際は保護者の同意を要する。\",\"content_en\":\"Consent from guardians is required when handling personal data of minors under 15 years old.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 22\",\"dimension\":\"MinorProtection\",\"content_original\":\"14세 미만 아동의 개인정보 처리 시 법적 보호자의 동의를 필수로 취득해야 한다.\",\"content_en\":\"It is mandatory to obtain consent from legal guardians when processing personal information of children under 14.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 47\",\"dimension\":\"DataSubjectRight\",\"content_original\":\"个人有权要求处理者删除、清除其个人信息。\",\"content_en\":\"Data subjects have the right to request handlers to delete and erase their personal information.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 66\",\"dimension\":\"Penalty\",\"content_original\":\"违法处理个人信息的，可处五千万元以下罚款；情节严重吊销相关业务许可。\",\"content_en\":\"Violations of personal information processing rules may incur fines up to 50 million RMB; severe violations will result in revocation of relevant business permits.\"}]');
+let filteredList = [];
+let currentPage = 1;
+
+const dimFilter = document.getElementById("dimFilter");
+const jurFilter = document.getElementById("jurFilter");
+const keywordInput = document.getElementById("keywordInput");
+const searchBtn = document.getElementById("searchBtn");
+const resetBtn = document.getElementById("resetBtn");
+const resultBox = document.getElementById("resultBox");
+const pageBar = document.getElementById("pageBar");
+
+// 填充维度下拉
+const dimList = [
+    "BasicDefinition",
+    "DataSubjectRight",
+    "DataControllerObligation",
+    "AutomatedDecision",
+    "MinorProtection",
+    "CrossBorderTransfer",
+    "Penalty",
+    "ComplianceAssessment"
+];
+dimList.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dimFilter.appendChild(opt);
+})
+
+// 绑定按钮事件
+searchBtn.addEventListener("click", doSearch);
+resetBtn.addEventListener("click", resetAll);
+keywordInput.addEventListener("keydown", e=>{if(e.key === "Enter") searchBtn.click();})
+
+// 重置所有筛选条件
+function resetAll(){
+    dimFilter.value = "";
+    jurFilter.value = "";
+    keywordInput.value = "";
+    filteredList = [...fullLawData];
+    currentPage = 1;
+    renderPage();
+}
+
+// 核心筛选逻辑
+function doSearch(){
+    const dimVal = dimFilter.value;
+    const jurVal = jurFilter.value;
+    const kw = keywordInput.value.trim().toLowerCase();
+    filteredList = [...fullLawData];
+
+    if(dimVal) filteredList = filteredList.filter(item => item.dimension === dimVal);
+    if(jurVal) filteredList = filteredList.filter(item => item.law_code === jurVal);
+    if(kw){
+        filteredList = filteredList.filter(item=>{
+            const ori = item.content_original.toLowerCase();
+            const en = item.content_en.toLowerCase();
+            return ori.includes(kw) || en.includes(kw);
+        })
+    }
+    currentPage = 1;
+    renderPage();
+}
+
+// 关键词高亮处理
+function highlightText(text, kw){
+    if(!kw) return text;
+    const reg = new RegExp(`(${kw})`, "gi");
+    return text.replace(reg, `<span class="highlight">$1</span>`);
+}
+
+// 分页渲染双语法条（原文+英文释义）
+function renderPage(){
+    resultBox.innerHTML = "";
+    pageBar.style.display = "none";
+    const total = filteredList.length;
+    if(total === 0){
+        resultBox.innerHTML = `<div class="empty-tip">No matching bilingual clauses found, adjust filters or keyword.</div>`;
+        return;
+    }
+    // 分页切片
+    const totalPage = Math.ceil(total / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageData = filteredList.slice(start, start + PAGE_SIZE);
+    const kw = keywordInput.value.trim();
+
+    // 渲染每条双语卡片
+    pageData.forEach(item=>{
+        const oriHtml = highlightText(item.content_original, kw);
+        const enHtml = highlightText(item.content_en, kw);
+        const card = `
+        <div class="clause-card">
+            <div class="card-header">[${item.law_code}] ${item.clause_no} | Dimension: ${item.dimension}</div>
+            <div class="original-text"><b>Original Text:</b><br>${oriHtml}</div>
+            <div class="en-trans-text"><b>Official English Interpretation:</b><br>${enHtml}</div>
+        </div>
+        `;
+        resultBox.innerHTML += card;
+    })
+
+    // 生成分页按钮
+    if(totalPage > 1){
+        pageBar.style.display = "block";
+        pageBar.innerHTML = "";
+        for(let i=1;i<=totalPage;i++){
+            const btn = document.createElement("button");
+            btn.className = "page-btn" + (i === currentPage ? " active" : "");
+            btn.textContent = i;
+            btn.onclick = ()=>{
+                currentPage = i;
+                renderPage();
+            }
+            pageBar.appendChild(btn);
+        }
+    }
+}
+
+// 页面加载默认展示全部法条
+window.onload = ()=>{
+    filteredList = [...fullLawData];
+    renderPage();
+}
+</script>
+</body>
+</html>

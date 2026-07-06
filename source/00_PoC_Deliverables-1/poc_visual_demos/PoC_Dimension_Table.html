@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoC Dimension Grouped Law Table | Bilingual Original + English</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial, sans-serif;}
+body{background:#f8f9fa;padding:24px;max-width:1500px;margin:0 auto;}
+h1{text-align:center;color:#b22222;margin-bottom:8px;}
+.desc{text-align:center;color:#555;margin-bottom:24px;font-size:14px;}
+.control-bar{background:#fff;padding:16px;border-radius:8px;margin-bottom:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 6px #e0e0e0;}
+#dimFilter{padding:9px;min-width:240px;border:1px solid #ddd;border-radius:6px;}
+#keywordInput{padding:9px;min-width:300px;border:1px solid #ddd;border-radius:6px;flex:1;}
+#refreshBtn{background:#dc3545;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;}
+#exportBtn{background:#c82333;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;}
+.dim-block{background:#fff;border-radius:10px;padding:20px;margin-bottom:28px;box-shadow:0 1px 8px #eee;}
+.dim-title{font-size:18px;color:#b22222;border-bottom:2px solid #dc3545;padding-bottom:10px;margin-bottom:16px;}
+.jur-subtitle{font-size:15px;margin:14px 0 8px 0;color:#444;font-weight:bold;}
+.clause-item{border-bottom:1px solid #eee;padding:14px 0;}
+.clause-id{font-size:12px;color:#777;margin-bottom:6px;}
+.original-text{line-height:1.6;color:#111;white-space:pre-line;}
+.en-trans{line-height:1.6;color:#c82333;margin-top:8px;border-top:1px dashed #ddd;padding-top:8px;white-space:pre-line;}
+.highlight{background:#fff399;padding:0 2px;}
+.empty-tip{text-align:center;padding:70px;color:#888;font-size:15px;}
+</style>
+</head>
+<body>
+<h1>PoC Privacy Law Dimension Grouped Table</h1>
+<div class="desc">Bilingual Dataset | Original Text + Official English Interpretation</div>
+
+<div class="control-bar">
+    <label>Filter Single Dimension:</label>
+    <select id="dimFilter">
+        <option value="">All Dimensions</option>
+    </select>
+    <label>Search Keyword (Match Both Original & English):</label>
+    <input id="keywordInput" placeholder="Input keyword for highlight">
+    <button id="refreshBtn">Refresh Table</button>
+    <button id="exportBtn">Export All Bilingual Text</button>
+</div>
+
+<div id="tableContainer"></div>
+
+<script>
+const rawJson = '[{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 38\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"个人信息处理者向境外提供个人信息的，应当取得个人单独同意，并按照国家网信部门规定完成安全评估。\",\"content_en\":\"Where a personal information handler provides personal information to overseas parties, it shall obtain separate individual consent from data subjects and complete security assessment in accordance with rules issued by national cyberspace authority.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 24\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"事業者が外国に個人データを提供する場合、本人の明示的な同意を取得し、移転先の国の保護水準を確認しなければならない。\",\"content_en\":\"When a business operator transfers personal data to foreign jurisdictions, it must obtain explicit consent from the data subject and verify the personal data protection standard of the receiving country.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 42\",\"dimension\":\"CrossBorderTransfer\",\"content_original\":\"개인정보처리자는 해외로 개인정보를 이전하려면 정보주체의 별도 동의를 받고 이전 국가의 보호수준을 검증해야 한다.\",\"content_en\":\"Personal information processors shall obtain separate consent from data subjects before transferring personal data overseas and verify the data protection level of the destination country.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 31\",\"dimension\":\"MinorProtection\",\"content_original\":\"处理不满十四周岁未成年人个人信息，应当征得监护人同意。\",\"content_en\":\"Processing personal information of minors under the age of 14 shall obtain consent from their legal guardians.\"},{\"law_code\":\"JP_APPI\",\"clause_no\":\"Article 18\",\"dimension\":\"MinorProtection\",\"content_original\":\"15歳未満の未成年者の個人データを取り扱う際は保護者の同意を要する。\",\"content_en\":\"Consent from guardians is required when handling personal data of minors under 15 years old.\"},{\"law_code\":\"KR_PIPA\",\"clause_no\":\"Article 22\",\"dimension\":\"MinorProtection\",\"content_original\":\"14세 미만 아동의 개인정보 처리 시 법적 보호자의 동의를 필수로 취득해야 한다.\",\"content_en\":\"It is mandatory to obtain consent from legal guardians when processing personal information of children under 14.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 47\",\"dimension\":\"DataSubjectRight\",\"content_original\":\"个人有权要求处理者删除、清除其个人信息。\",\"content_en\":\"Data subjects have the right to request handlers to delete and erase their personal information.\"},{\"law_code\":\"CN_PIPL\",\"clause_no\":\"Article 66\",\"dimension\":\"Penalty\",\"content_original\":\"违法处理个人信息的，可处五千万元以下罚款；情节严重吊销相关业务许可。\",\"content_en\":\"Violations of personal information processing rules may incur fines up to 50 million RMB; severe violations will result in revocation of relevant business permits.\"}]';
+const fullData = JSON.parse(rawJson);
+const dimFilter = document.getElementById("dimFilter");
+const keywordInput = document.getElementById("keywordInput");
+const refreshBtn = document.getElementById("refreshBtn");
+const exportBtn = document.getElementById("exportBtn");
+const tableContainer = document.getElementById("tableContainer");
+
+// Fill dimension dropdown
+const dimOptions = [
+    "BasicDefinition",
+    "DataSubjectRight",
+    "DataControllerObligation",
+    "AutomatedDecision",
+    "MinorProtection",
+    "CrossBorderTransfer",
+    "Penalty",
+    "ComplianceAssessment"
+];
+dimOptions.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dimFilter.appendChild(opt);
+})
+
+refreshBtn.addEventListener("click", renderAll);
+exportBtn.addEventListener("click", exportAllText);
+keywordInput.addEventListener("keydown", e=>{if(e.key === "Enter") renderAll();})
+
+// Keyword highlight util
+function highlightStr(text, kw){
+    if(!kw) return text;
+    const reg = new RegExp(`(${kw})`, "gi");
+    return text.replace(reg, `<span class="highlight">$1</span>`);
+}
+
+// Core render grouped by dimension -> jurisdiction
+function renderAll(){
+    tableContainer.innerHTML = "";
+    const targetDim = dimFilter.value;
+    const kw = keywordInput.value.trim().toLowerCase();
+    let sourceData = [...fullData];
+
+    // Dimension filter
+    if(targetDim) sourceData = sourceData.filter(i=>i.dimension === targetDim);
+    // Keyword filter (match original + english)
+    if(kw){
+        sourceData = sourceData.filter(item=>{
+            const ori = item.content_original.toLowerCase();
+            const en = item.content_en.toLowerCase();
+            return ori.includes(kw) || en.includes(kw);
+        })
+    }
+
+    if(sourceData.length === 0){
+        tableContainer.innerHTML = `<div class="empty-tip">No matching bilingual clauses found, change filter or keyword.</div>`;
+        return;
+    }
+
+    // Group by dimension first
+    const groupByDim = {};
+    dimOptions.forEach(d=>groupByDim[d] = []);
+    sourceData.forEach(item=>groupByDim[item.dimension].push(item));
+
+    // Build each dimension block
+    dimOptions.forEach(dimName=>{
+        const dimClauses = groupByDim[dimName];
+        if(dimClauses.length === 0) return;
+
+        let dimHtml = `<div class="dim-block"><div class="dim-title">${dimName}</div>`;
+        // Sub group by jurisdiction inside dimension
+        ["CN_PIPL","JP_APPI","KR_PIPA"].forEach(jur=>{
+            const jurList = dimClauses.filter(c=>c.law_code === jur);
+            if(jurList.length === 0) return;
+            dimHtml += `<div class="jur-subtitle">${jur}</div>`;
+            jurList.forEach(item=>{
+                const oriHtml = highlightStr(item.content_original, kw);
+                const enHtml = highlightStr(item.content_en, kw);
+                dimHtml += `
+                <div class="clause-item">
+                    <div class="clause-id">${item.clause_no}</div>
+                    <div class="original-text">Original: ${oriHtml}</div>
+                    <div class="en-trans">Official English Interpretation: ${enHtml}</div>
+                </div>
+                `;
+            })
+        })
+        dimHtml += "</div>";
+        tableContainer.innerHTML += dimHtml;
+    })
+}
+
+// Export full bilingual text to clipboard
+function exportAllText(){
+    let exportText = "==== Full Bilingual Privacy Law Dataset Export ====\n\n";
+    fullData.forEach(item=>{
+        exportText += `[${item.law_code}] ${item.dimension} | ${item.clause_no}\nOriginal Text: ${item.content_original}\nEnglish Interpretation: ${item.content_en}\n\n`;
+    })
+    navigator.clipboard.writeText(exportText).then(()=>alert("All bilingual clauses copied to clipboard!"));
+}
+
+window.onload = renderAll;
+</script>
+</body>
+</html>
